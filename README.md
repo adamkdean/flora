@@ -1,6 +1,8 @@
 <p align="center">
   <img src="https://i.imgur.com/fRHa4w6.png" width="220"><br>
   Digital plant simulation project<br>
+</p>
+<p align="center">
   <a href="/app">Get Started</a>
 </p>
 
