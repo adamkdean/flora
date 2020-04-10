@@ -3,7 +3,7 @@
   Digital plant simulation project<br>
 </p>
 <p align="center">
-  <a href="/app">Get Started</a>
+  <a href="app/">Get Started</a>
 </p>
 
 ----
