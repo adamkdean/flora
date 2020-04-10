@@ -1,7 +1,7 @@
-<center>
-  <img src="https://i.imgur.com/fRHa4w6.png" width="220">
-  <p>Digital plant simulation project</p>
-</center>
+<p align="center">
+  <img src="https://i.imgur.com/fRHa4w6.png" width="220"><br>
+  Digital plant simulation project
+</p>
 
 ----
 
