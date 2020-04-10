@@ -9,7 +9,7 @@
 Digital plant simulation project
 */
 
-const flora = new Flora()
-flora.initialize(() => {
-  document.body.appendChild(flora.app.view)
-})
+* {
+  padding: 0;
+  margin: 0;
+}
