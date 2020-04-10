@@ -48,9 +48,11 @@ Flora.prototype.initializeResources = function (done) {
   this.loader = new PIXI.Loader()
   this.loader.add('soil', 'images/soil.png')
              .add('sun', 'images/sun.png')
+             .add('test', 'images/test.png')
   this.loader.load((loader, resources) => {
     this.sprites.soil = new PIXI.TilingSprite(resources.soil.texture)
     this.sprites.sun = new PIXI.Sprite(resources.sun.texture)
+    this.sprites.test = new PIXI.Sprite(resources.test.texture)
     done()
   })
 }
@@ -59,7 +61,12 @@ Flora.prototype.initializeResources = function (done) {
 // Adds all objects to the stage etc
 //
 Flora.prototype.initializeInterface = function (done) {
-  const defaultFontStyle = { fontFamily: 'monospace', fontSize: 14, fill: '#aaa' }
+  const defaultFontStyle = { fontFamily: 'monospace', fontSize: 14, fill: '#aaaaaa' }
+  const titleFontStyle = { fontFamily: 'monospace', fontSize: 14, fill: '#49973e' }
+
+  // Test
+  this.sprites.test.anchor.set(0.5)
+  // this.app.stage.addChild(this.sprites.test)
 
   // Sun
   this.sprites.sun.anchor.set(0.5)
@@ -74,10 +81,12 @@ Flora.prototype.initializeInterface = function (done) {
   this.interface = {}
   this.interface.textMargin = 10
   this.interface.textHeight = PIXI.TextMetrics.measureText('EXAMPLE', new PIXI.TextStyle(defaultFontStyle)).lineHeight
+  this.interface.title = new PIXI.Text('Flora', titleFontStyle)
   this.interface.time = new PIXI.Text('TIME', defaultFontStyle)
   this.interface.day = new PIXI.Text('DAY', defaultFontStyle)
   this.interface.time.anchor.set(1, 0)
   this.interface.day.anchor.set(1, 0)
+  this.app.stage.addChild(this.interface.title)
   this.app.stage.addChild(this.interface.time)
   this.app.stage.addChild(this.interface.day)
 }
@@ -87,8 +96,10 @@ Flora.prototype.initializeInterface = function (done) {
 //
 Flora.prototype.initializeEnvironment = function () {
   this.state = {
+    day: 1,
     time: 0,
-    day: 1
+    timeFactor: 1,
+    timeInDay: 1440
   }
 }
 
@@ -99,7 +110,7 @@ Flora.prototype.start = function () {
   setInterval(() => {
     this.update()
     this.draw()
-  }, 33)
+  }, 33 * this.state.timeFactor)
 }
 
 
@@ -108,7 +119,7 @@ Flora.prototype.start = function () {
 // and update the state
 //
 Flora.prototype.update = function () {
-  if (this.state.time < 1440) this.state.time += 5
+  if (this.state.time < this.state.timeInDay) this.state.time += 1
   else {
     this.state.time = 0
     this.state.day++
@@ -124,10 +135,9 @@ Flora.prototype.draw = function () {
   if (this.screenSizeChanged) {
     this.screenSizeChanged = false
     this.app.renderer.resize(window.innerWidth, window.innerHeight)
-    this.interface.time.position.x = window.innerWidth - this.interface.textMargin
-    this.interface.time.position.y = this.interface.textMargin
-    this.interface.day.position.x = window.innerWidth - this.interface.textMargin
-    this.interface.day.position.y = this.interface.textHeight + this.interface.textMargin
+    this.interface.title.position.set(this.interface.textMargin, this.interface.textMargin)
+    this.interface.time.position.set(window.innerWidth - this.interface.textMargin, this.interface.textMargin)
+    this.interface.day.position.set(window.innerWidth - this.interface.textMargin, this.interface.textHeight + this.interface.textMargin)
     this.sprites.soil.position.y = window.innerHeight - this.sprites.soil.height
   }
 
@@ -136,5 +146,9 @@ Flora.prototype.draw = function () {
   this.interface.time.text = `TIME ${this.state.time}` // TODO: human string
 
   // Calculate sun position
-  this.sprites.sun.x = (window.innerWidth / 1440) * this.state.time
+  const sunHeightRatio = Math.sin((this.state.time / this.state.timeInDay) * Math.PI)
+  this.sprites.sun.x = (window.innerWidth / this.state.timeInDay) * this.state.time
+  this.sprites.sun.y = window.innerHeight * (1 - sunHeightRatio)
+  this.sprites.sun.tint = tinycolor(`hsv(56, ${(1 - sunHeightRatio) * 100}%, 100%)`).toHexString().replace('#', '0x')
+
 }
