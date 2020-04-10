@@ -46,8 +46,10 @@ Flora.prototype.initializeApp = function () {
 Flora.prototype.initializeResources = function (done) {
   this.sprites = {}
   this.loader = new PIXI.Loader()
-  this.loader.add('sun', 'images/sun.png')
+  this.loader.add('soil', 'images/soil.png')
+             .add('sun', 'images/sun.png')
   this.loader.load((loader, resources) => {
+    this.sprites.soil = new PIXI.TilingSprite(resources.soil.texture)
     this.sprites.sun = new PIXI.Sprite(resources.sun.texture)
     done()
   })
@@ -60,9 +62,13 @@ Flora.prototype.initializeInterface = function (done) {
   const defaultFontStyle = { fontFamily: 'monospace', fontSize: 14, fill: '#aaa' }
 
   // Sun
-  this.sprites.sun.anchor.x = 0.5
-  this.sprites.sun.anchor.y = 0.5
+  this.sprites.sun.anchor.set(0.5)
   this.app.stage.addChild(this.sprites.sun)
+
+  // Soil
+  this.sprites.soil.width = innerWidth
+  this.sprites.soil.height = 200
+  this.app.stage.addChild(this.sprites.soil)
 
   // Date/Time
   this.interface = {}
@@ -122,11 +128,12 @@ Flora.prototype.draw = function () {
     this.interface.time.position.y = this.interface.textMargin
     this.interface.day.position.x = window.innerWidth - this.interface.textMargin
     this.interface.day.position.y = this.interface.textHeight + this.interface.textMargin
+    this.sprites.soil.position.y = window.innerHeight - this.sprites.soil.height
   }
 
   // Update text displays
   this.interface.day.text = `DAY ${this.state.day}`
-  this.interface.time.text = `TIME ${this.state.time}` // Todo: human string
+  this.interface.time.text = `TIME ${this.state.time}` // TODO: human string
 
   // Calculate sun position
   this.sprites.sun.x = (window.innerWidth / 1440) * this.state.time
