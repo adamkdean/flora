@@ -42,7 +42,7 @@ FloraTime.prototype.incrementDay = function () {
   if (this.state.dayOfSeason < this.state.daysInSeason) {
     this.state.dayOfSeason++
   } else {
-    this.state.dayOfSeason = 0
+    this.state.dayOfSeason = 1
     this.incrementSeason()
   }
 }
@@ -53,8 +53,9 @@ FloraTime.prototype.incrementDay = function () {
 FloraTime.prototype.incrementSeason = function () {
   if (this.state.season < 4) {
     this.state.season++
+    console.log(`[Flora] It is now ${this.seasonString()}`)
   } else {
-    this.state.season = 0
+    this.state.season = 1
     this.incrementYear()
   }
 }
@@ -63,7 +64,17 @@ FloraTime.prototype.incrementSeason = function () {
 // Increment year
 //
 FloraTime.prototype.incrementYear = function () {
-  this.state.years++
+  this.state.year++
+}
+
+//
+// Get daylight for today in minutes (time)
+//
+FloraTime.prototype.daylightMinutes = function () {
+  if (this.state.season == 1) return 840      // 14 hours
+  else if (this.state.season == 2) return 960 // 16 hours
+  else if (this.state.season == 3) return 840 // 14 hours
+  else if (this.state.season == 4) return 720 // 12 hours
 }
 
 //
@@ -72,15 +83,15 @@ FloraTime.prototype.incrementYear = function () {
 FloraTime.prototype.timeString = function () {
   const hours = Math.floor(this.state.time / 60)
   const mins = this.state.time % 60
-  return `${hours}:${mins}`
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
 }
 
 //
 // Return season as string
 //
-FloraTime.prototype.seasonString = function () {
-  if (this.state.season == 0) return 'SPRING'
-  else if (this.state.season == 1) return 'SUMMER'
-  else if (this.state.season == 2) return 'AUTUMN'
-  else if (this.state.season == 3) return 'WINTER'
+FloraTime.prototype.seasonString = function (uppercase = false) {
+  if (this.state.season == 1) return uppercase ? 'SPRING' : 'Spring'
+  else if (this.state.season == 2) return uppercase ? 'SUMMER' : 'Summer'
+  else if (this.state.season == 3) return uppercase ? 'AUTUMN' : 'Autumn'
+  else if (this.state.season == 4) return uppercase ? 'WINTER' : 'Winter'
 }

@@ -33,7 +33,6 @@ Flora.prototype.initializeApp = function () {
     autoResize: true,
     resolution: devicePixelRatio
   })
-  this.app.renderer.backgroundColor = 0xD7EAF9
   this.app.renderer.view.style.position = 'absolute'
   this.app.renderer.view.style.display = 'block'
   this.screenSizeChanged = true
@@ -81,8 +80,6 @@ Flora.prototype.initializeInterface = function (done) {
   // this.app.stage.addChild(this.sprites.moon)
 
   // Soil
-  this.sprites.soil.width = innerWidth
-  this.sprites.soil.height = 200
   this.app.stage.addChild(this.sprites.soil)
 
   // Date/Time
@@ -114,9 +111,9 @@ Flora.prototype.initializeEnvironment = function () {
     timeFactor: 0.25,
     timeInDay: 1440,
     day: 1,
-    dayOfSeason: 0,
-    daysInSeason: 15,
-    season: 0,
+    dayOfSeason: 1,
+    daysInSeason: 5,
+    season: 1,
     year: 1
   }
   this.time = new FloraTime(this.state)
@@ -145,28 +142,60 @@ Flora.prototype.update = function () {
 // changes behind the scenes
 //
 Flora.prototype.draw = function () {
-  // Handle initial/further screen resizes
-  if (this.screenSizeChanged) {
-    this.screenSizeChanged = false
-    this.app.renderer.resize(window.innerWidth, window.innerHeight)
-    this.interface.title.position.set(this.interface.textMargin, this.interface.textMargin)
-    this.interface.season.position.set(window.innerWidth - this.interface.textMargin, this.interface.textMargin)
-    this.interface.time.position.set(window.innerWidth - this.interface.textMargin, this.interface.textHeight + this.interface.textMargin)
-    this.interface.day.position.set(window.innerWidth - this.interface.textMargin, 2 * this.interface.textHeight + this.interface.textMargin)
-    this.interface.year.position.set(window.innerWidth - this.interface.textMargin, 3 * this.interface.textHeight + this.interface.textMargin)
-    this.sprites.soil.position.y = window.innerHeight - this.sprites.soil.height
-  }
+  // Handle interface resizing (initial render/on resize)
+  if (this.screenSizeChanged) this.redrawInterface()
 
-  // Update text displays
-  this.interface.season.text = `${this.time.seasonString()}`
+  this.updateInterfaceText()
+  this.drawEnvironment()
+}
+
+//
+// Draw all static interface objects
+//
+Flora.prototype.redrawInterface = function () {
+  console.log(`[Flora] Redrawing interface for ${window.innerWidth}x${window.innerHeight}`)
+  this.screenSizeChanged = false
+  this.app.renderer.resize(window.innerWidth, window.innerHeight)
+  this.interface.title.position.set(this.interface.textMargin, this.interface.textMargin)
+  this.interface.season.position.set(window.innerWidth - this.interface.textMargin, this.interface.textMargin)
+  this.interface.time.position.set(window.innerWidth - this.interface.textMargin, this.interface.textHeight + this.interface.textMargin)
+  this.interface.day.position.set(window.innerWidth - this.interface.textMargin, 2 * this.interface.textHeight + this.interface.textMargin)
+  this.interface.year.position.set(window.innerWidth - this.interface.textMargin, 3 * this.interface.textHeight + this.interface.textMargin)
+  this.sprites.soil.height = window.innerHeight * 0.2
+  this.sprites.soil.width = window.innerWidth
+  this.sprites.soil.position.y = window.innerHeight - this.sprites.soil.height
+}
+
+//
+// Update interface text displays
+//
+Flora.prototype.updateInterfaceText = function () {
+  this.interface.season.text = `${this.time.seasonString(true)}`
   this.interface.time.text = `TIME ${this.time.timeString()}`
   this.interface.day.text = `DAY ${this.state.day}`
   this.interface.year.text = `YEAR ${this.state.year}`
+}
+
+//
+// Draw environment (sun, moon, stars, sky etc)
+//
+Flora.prototype.drawEnvironment = function () {
+  // Sunrise/sunset at proper time
+  const daylightLength = this.time.daylightMinutes()
+  const daylightStart = (this.state.timeInDay * 0.5) - (daylightLength * 0.5)
+  const daylightEnd = (this.state.timeInDay * 0.5) + (daylightLength * 0.5)
+  const isDaylight = this.state.time >= daylightStart && this.state.time <= daylightEnd
+  const daylightTime = this.state.time - ((this.state.timeInDay - daylightLength) / 2)
 
   // Calculate sun position
-  const sunHeightRatio = Math.sin((this.state.time / this.state.timeInDay) * Math.PI)
+  const sunHeightRatio = Math.max(0, Math.sin((daylightTime / daylightLength) * Math.PI))
   const sunWidth = window.innerWidth + 400
-  this.sprites.sun.x = -200 + (sunWidth / this.state.timeInDay) * this.state.time
+
+  this.sprites.sun.visible = isDaylight
+  this.sprites.sun.x = -200 + (sunWidth / daylightLength) * daylightTime
   this.sprites.sun.y = window.innerHeight * (1 - sunHeightRatio)
-  this.sprites.sun.tint = tinycolor(`hsv(56, ${(1 - sunHeightRatio) * 100}%, 100%)`).toHexString().replace('#', '0x')
+
+  // Sun/sky colour
+  this.sprites.sun.tint = FloraColour.hsvToPixiString(42, (1.2 - sunHeightRatio) * 100, 100)
+  this.app.renderer.backgroundColor = FloraColour.hsvToPixiString(215, 30, (0.1 + sunHeightRatio) * 100)
 }
