@@ -197,5 +197,6 @@ Flora.prototype.drawEnvironment = function () {
 
   // Sun/sky colour
   this.sprites.sun.tint = FloraColour.hsvToPixiString(42, (1.2 - sunHeightRatio) * 100, 100)
+  this.sprites.soil.tint = FloraColour.hsvToPixiString(0, 0, (0.2 + sunHeightRatio) * 100)
   this.app.renderer.backgroundColor = FloraColour.hsvToPixiString(215, 30, (0.1 + sunHeightRatio) * 100)
 }
