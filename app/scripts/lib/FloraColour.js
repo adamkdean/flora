@@ -42,3 +42,13 @@ FloraColour.hsvToHexString = function (hue, sat, value) {
 FloraColour.hsvToPixiString = function (hue, sat, value) {
   return tinycolor(`hsv(${hue}, ${sat}%, ${value}%)`).toHexString().replace('#', '0x')
 }
+
+//
+// Blend two hsv colours and return pixi hex string, e.g.
+// (0, 100, 100, 50, 50, 50) -> '0xc03b20'
+//
+FloraColour.blendHsvToPixiString = function (hueA, satA, valueA, hueB, satB, valueB, amount) {
+  const a = tinycolor(`hsv(${hueA}, ${satA}%, ${valueA}%)`)
+  const b = tinycolor(`hsv(${hueB}, ${satB}%, ${valueB}%)`)
+  return tinycolor.mix(a, b, amount).toHexString().replace('#', '0x')
+}

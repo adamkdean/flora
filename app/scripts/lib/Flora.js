@@ -37,6 +37,7 @@ Flora.prototype.initializeApp = function () {
   this.app.renderer.view.style.display = 'block'
   this.screenSizeChanged = true
   window.onresize = () => this.screenSizeChanged = true
+  document.addEventListener('keypress', e => this.onKeyPress(e))
 }
 
 //
@@ -47,11 +48,13 @@ Flora.prototype.initializeResources = function (done) {
   this.loader = new PIXI.Loader()
   this.loader.add('sun', 'images/sun.png')
              .add('moon', 'images/moon.png')
+             .add('moonglow', 'images/moonglow.png')
              .add('soil', 'images/soil.png')
              .add('test', 'images/test.png')
   this.loader.load((loader, resources) => {
     this.sprites.sun = new PIXI.Sprite(resources.sun.texture)
     this.sprites.moon = new PIXI.Sprite(resources.moon.texture)
+    this.sprites.moonglow = new PIXI.Sprite(resources.moonglow.texture)
     this.sprites.soil = new PIXI.TilingSprite(resources.soil.texture)
     this.sprites.test = new PIXI.Sprite(resources.test.texture)
     done()
@@ -77,7 +80,10 @@ Flora.prototype.initializeInterface = function (done) {
   // Moon
   this.sprites.moon.anchor.set(0.5)
   this.sprites.moon.scale.set(0.5)
-  // this.app.stage.addChild(this.sprites.moon)
+  this.sprites.moonglow.anchor.set(0.5)
+  this.sprites.moonglow.scale.set(0.5)
+  this.app.stage.addChild(this.sprites.moonglow)
+  this.app.stage.addChild(this.sprites.moon)
 
   // Soil
   this.app.stage.addChild(this.sprites.soil)
@@ -91,15 +97,18 @@ Flora.prototype.initializeInterface = function (done) {
   this.interface.time = new PIXI.Text('TIME', defaultFontStyle)
   this.interface.day = new PIXI.Text('DAY', defaultFontStyle)
   this.interface.year = new PIXI.Text('YEAR', defaultFontStyle)
+  this.interface.paused = new PIXI.Text('', defaultFontStyle)
   this.interface.time.anchor.set(1, 0)
   this.interface.day.anchor.set(1, 0)
   this.interface.year.anchor.set(1, 0)
   this.interface.season.anchor.set(1, 0)
+  this.interface.paused.anchor.set(1, 0)
   this.app.stage.addChild(this.interface.title)
   this.app.stage.addChild(this.interface.season)
   this.app.stage.addChild(this.interface.time)
   this.app.stage.addChild(this.interface.day)
   this.app.stage.addChild(this.interface.year)
+  this.app.stage.addChild(this.interface.paused)
 }
 
 //
@@ -114,7 +123,8 @@ Flora.prototype.initializeEnvironment = function () {
     dayOfSeason: 1,
     daysInSeason: 5,
     season: 1,
-    year: 1
+    year: 1,
+    paused: false
   }
   this.time = new FloraTime(this.state)
 }
@@ -129,11 +139,18 @@ Flora.prototype.start = function () {
   }, 33 * this.state.timeFactor)
 }
 
+Flora.prototype.onKeyPress = function (event) {
+  if (event && event.keyCode == 32) {
+    this.state.paused = !this.state.paused
+  }
+}
+
 //
 // Process the next step in the simulation
 // and update the state
 //
 Flora.prototype.update = function () {
+  if (this.state.paused) return
   this.time.update()
 }
 
@@ -144,7 +161,6 @@ Flora.prototype.update = function () {
 Flora.prototype.draw = function () {
   // Handle interface resizing (initial render/on resize)
   if (this.screenSizeChanged) this.redrawInterface()
-
   this.updateInterfaceText()
   this.drawEnvironment()
 }
@@ -161,6 +177,7 @@ Flora.prototype.redrawInterface = function () {
   this.interface.time.position.set(window.innerWidth - this.interface.textMargin, this.interface.textHeight + this.interface.textMargin)
   this.interface.day.position.set(window.innerWidth - this.interface.textMargin, 2 * this.interface.textHeight + this.interface.textMargin)
   this.interface.year.position.set(window.innerWidth - this.interface.textMargin, 3 * this.interface.textHeight + this.interface.textMargin)
+  this.interface.paused.position.set(window.innerWidth - this.interface.textMargin, 4 * this.interface.textHeight + this.interface.textMargin)
   this.sprites.soil.height = window.innerHeight * 0.2
   this.sprites.soil.width = window.innerWidth
   this.sprites.soil.position.y = window.innerHeight - this.sprites.soil.height
@@ -174,29 +191,52 @@ Flora.prototype.updateInterfaceText = function () {
   this.interface.time.text = `TIME ${this.time.timeString()}`
   this.interface.day.text = `DAY ${this.state.day}`
   this.interface.year.text = `YEAR ${this.state.year}`
+  this.interface.paused.text = this.state.paused ? `PAUSED` : ``
 }
 
 //
 // Draw environment (sun, moon, stars, sky etc)
 //
 Flora.prototype.drawEnvironment = function () {
-  // Sunrise/sunset at proper time
+  // Calculate environment variables
+  const dayRatio = this.state.time / this.state.timeInDay
   const daylightLength = this.time.daylightMinutes()
   const daylightStart = (this.state.timeInDay * 0.5) - (daylightLength * 0.5)
   const daylightEnd = (this.state.timeInDay * 0.5) + (daylightLength * 0.5)
   const isDaylight = this.state.time >= daylightStart && this.state.time <= daylightEnd
   const daylightTime = this.state.time - ((this.state.timeInDay - daylightLength) / 2)
-
-  // Calculate sun position
   const sunHeightRatio = Math.max(0, Math.sin((daylightTime / daylightLength) * Math.PI))
+  const sunlightAmount = (0.2 + sunHeightRatio) * 100
   const sunWidth = window.innerWidth + 400
+  const moonWidth = window.innerWidth
+  const moonHeight = 300
+  const moonVisibility = FloraMath.clamp(1.1 - sunHeightRatio, 0.1, 0.9)
+  const moonPositionRatio = ((this.state.dayOfSeason - 1) + dayRatio) / (this.state.daysInSeason - 1)
 
+  // Sun position
   this.sprites.sun.visible = isDaylight
   this.sprites.sun.x = -200 + (sunWidth / daylightLength) * daylightTime
   this.sprites.sun.y = window.innerHeight * (1 - sunHeightRatio)
 
-  // Sun/sky colour
+  // Moon position
+  this.sprites.moon.alpha = moonVisibility
+  this.sprites.moon.x = -200 + moonWidth * moonPositionRatio
+  this.sprites.moon.y = 100 + (moonHeight - (moonHeight * moonPositionRatio))
+  this.sprites.moonglow.alpha = (this.sprites.moon.alpha * 0.25)
+  this.sprites.moonglow.x = this.sprites.moon.x
+  this.sprites.moonglow.y = this.sprites.moon.y
+
+  // Sun/moon Light
+  const lightMix = 75 - ((sunHeightRatio + 0.15) * 75)
   this.sprites.sun.tint = FloraColour.hsvToPixiString(42, (1.2 - sunHeightRatio) * 100, 100)
-  this.sprites.soil.tint = FloraColour.hsvToPixiString(0, 0, (0.2 + sunHeightRatio) * 100)
-  this.app.renderer.backgroundColor = FloraColour.hsvToPixiString(215, 30, (0.1 + sunHeightRatio) * 100)
+  this.sprites.soil.tint = FloraColour.blendHsvToPixiString(
+    0, 0, (0.2 + sunHeightRatio) * 100, // Sunlight
+    209, 0, (moonVisibility * 0.5) * 100, // Moonlight
+    lightMix // Mix amount
+  )
+  this.app.renderer.backgroundColor = FloraColour.blendHsvToPixiString(
+    215, 30, (0.1 + sunHeightRatio) * 100, // Sunlight
+    209, 100, (moonVisibility * 0.5) * 100, // Moonlight
+    lightMix // Mix amount
+  )
 }

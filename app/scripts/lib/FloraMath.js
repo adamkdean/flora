@@ -31,3 +31,18 @@ FloraMath.percentToRadians = function (value) {
 FloraMath.degreesToRadians = function (value) {
   return value * Math.PI / 180
 }
+
+//
+// Normalizes a value between 0 and 1
+//
+FloraMath.normalize = function (value, min, max) {
+  if (max - min === 0) return 1
+  return (value - min) / (max - min)
+}
+
+//
+// Clamps a value between two values
+//
+FloraMath.clamp = function (value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
